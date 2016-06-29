@@ -1,4 +1,2 @@
 include ':app'
-include ':vitamioRecorderLibrary'
-include ':vCameraDemo'
 include ':androidffmpeglibrary'

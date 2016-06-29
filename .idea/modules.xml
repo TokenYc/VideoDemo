@@ -5,7 +5,6 @@
       <module fileurl="file://$PROJECT_DIR$/VideoDemo.iml" filepath="$PROJECT_DIR$/VideoDemo.iml" />
       <module fileurl="file://$PROJECT_DIR$/androidffmpeglibrary/androidffmpeglibrary.iml" filepath="$PROJECT_DIR$/androidffmpeglibrary/androidffmpeglibrary.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/vCameraDemo/vCameraDemo.iml" filepath="$PROJECT_DIR$/vCameraDemo/vCameraDemo.iml" />
       <module fileurl="file://$PROJECT_DIR$/vitamioRecorderLibrary/vitamioRecorderLibrary.iml" filepath="$PROJECT_DIR$/vitamioRecorderLibrary/vitamioRecorderLibrary.iml" />
     </modules>
   </component>
