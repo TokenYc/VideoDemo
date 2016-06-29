@@ -251,7 +251,7 @@ public class FfmpegController {
 		
 		//-vf crop=480:480:186:0 裁剪尺寸
 		cmd.add("-vf");
-		cmd.add("crop=480:480:"+top_x+":"+top_y);
+		cmd.add("crop=360:480:"+top_x+":"+top_y);
 		
 		// -preset ultrafast -tune zerolatency 加快效率
 		cmd.add("-preset");
@@ -261,7 +261,7 @@ public class FfmpegController {
 		cmd.add("zerolatency");
 
 		cmd.add("-s");
-		cmd.add("480x320");
+		cmd.add("360x480");
 
 		cmd.add(Argument.BITRATE_VIDEO);
 		cmd.add(800 + "k");

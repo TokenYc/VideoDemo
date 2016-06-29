@@ -66,6 +66,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         Log.e(TAG, "surfaceChanged");
+
         initCamera();
     }
 
@@ -86,12 +87,12 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
             parameters.setPictureFormat(PixelFormat.JPEG);
             parameters.setPreviewFormat(PixelFormat.YCbCr_420_SP);
             List<Camera.Size> sizes = parameters.getSupportedPreviewSizes();
-            float rate = 1.34f;
+            float rate = 640f/480f;
 //            for (Camera.Size size : sizes) {
 //                Log.e("size", "size:" + "-width-" + size.width + "-height-" + size.height);
 //                if (size.width>=400&&size.width<=800){
 //                    rate=(float)size.width/(float)size.height;
-            parameters.setPreviewSize(480, 320);
+            parameters.setPreviewSize(640, 480);
 //                    break;
 //                }
 //            }
@@ -101,12 +102,12 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
             int height = (int) (width);
             Log.e(TAG, "width:" + width + "height:" + height);
             layoutParams.width = width;
-            layoutParams.height = width*3/2;
+            layoutParams.height = (int)(width*rate);
             setLayoutParams(layoutParams);
-            Log.e("measure","showwidth:"+width+"showheight:"+width*2/3+"videoheight:"+width*3/2);
-            transY=(width*3/2-width*2/3)/2;
-            setTranslationY(-(width*3/2-width*2/3)/2);//视频高度-展示高度的一半，使裁剪的的中间位置，下面裁剪的位置也要注意
 
+            transY=(int)(((float)width*rate-(float)width/rate)/2f);
+            setTranslationY(-transY);//视频高度-展示高度的一半，使裁剪的的中间位置，下面裁剪的位置也要注意
+            Log.e("trans", "transy:" + transY);
 //            if (this.getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE) {
             parameters.set("orientation", "portrait"); //
             parameters.set("rotation", 90); // 镜头角度转90度（默认摄像头是横拍）
@@ -124,7 +125,6 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
                 e.printStackTrace();
             }
         }
-        initRecorder();
     }
 
     private void initRecorder() {
@@ -213,7 +213,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
                             getContext(), fileAppRoot);
 //
                     fc.compress_clipVideo(file1.getCanonicalPath(),
-                            file2.getCanonicalPath(), 0, transY,
+                            file2.getCanonicalPath(),80, 0,
                             new ShellUtils.ShellCallback() {
                                 private int flag = 0;
 
@@ -238,6 +238,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
 
     public void startRecord() {
         try {
+            initRecorder();
             mRecorder.prepare();
         } catch (IOException e) {
             e.printStackTrace();
