@@ -7,14 +7,13 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 
-import java.io.File;
 import java.io.IOException;
 
 /**
  * Created by 24706 on 2016/6/30.
  * 用来播放的View
  */
-public class QfVideoView extends SurfaceView implements SurfaceHolder.Callback{
+public class QfVideoView extends SurfaceView implements SurfaceHolder.Callback {
     private MediaPlayer mediaPlayer;
 
     public QfVideoView(Context context) {
@@ -33,33 +32,49 @@ public class QfVideoView extends SurfaceView implements SurfaceHolder.Callback{
     }
 
     private void init() {
+        isInEditMode();
         getHolder().addCallback(this);
+    }
+
+    private void initPlayer() {
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setDisplay(getHolder());
         setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 setVisibility(GONE);
-                if (mediaPlayer.isPlaying()){
+                if (mediaPlayer.isPlaying()) {
                     mediaPlayer.stop();
                 }
             }
         });
+        mediaPlayer.setLooping(true);
     }
 
-    public void play(String path){
+    public void play(String path) {
         try {
             setVisibility(VISIBLE);
-            mediaPlayer.setDataSource(path);
-            mediaPlayer.prepare();
-            mediaPlayer.start();
+            if (!mediaPlayer.isPlaying()) {
+                mediaPlayer.setDataSource(path);
+                mediaPlayer.prepare();
+                mediaPlayer.start();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    public void stop() {
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.release();
+            setVisibility(GONE);
+        }
+    }
+
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        mediaPlayer=new MediaPlayer();
-        mediaPlayer.setDisplay(holder);
+        initPlayer();
     }
 
     @Override

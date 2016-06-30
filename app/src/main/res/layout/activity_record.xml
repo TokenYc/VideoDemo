@@ -30,22 +30,22 @@
             android:layout_centerInParent="true"
             >
             <Button
+                android:id="@+id/btn_record"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/start_record"
-                android:onClick="startRecord"
                 />
             <Button
+                android:id="@+id/btn_stop_record"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/stop_record"
-                android:onClick="stopRecord"
                 />
             <Button
+                android:id="@+id/btn_play"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/play"
-                android:onClick="playVideo"
                 />
         </LinearLayout>
 

@@ -6,6 +6,8 @@ import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -25,10 +27,12 @@ import java.util.List;
  * Created by 24706 on 2016/6/28.
  * 视频预览和录制
  */
-public class Preview extends SurfaceView implements SurfaceHolder.Callback ,RecordManager{
+public class Preview extends SurfaceView implements SurfaceHolder.Callback, RecordManager {
     private static final String TAG = Preview.class.getName();
-    private static final int VIDEO_WIDTH=640;
-    private static final int VIDEO_HEIGHT=480;
+    private static final int VIDEO_WIDTH = 640;
+    private static final int VIDEO_HEIGHT = 480;
+
+    private static final int WHAT_COMPRESS = 13;
     private SurfaceHolder mSurfaceHolder;
     private Camera mCamera;
     private MediaRecorder mRecorder;
@@ -36,8 +40,20 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback ,Reco
     private File file2;//压缩的文件
     private CamcorderProfile profile;
     private int transY;
+    private boolean mIsRecording = false;
     private OnRecordStateChangedListener mStateListener;
 
+    Handler mHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case WHAT_COMPRESS:
+                    Toast.makeText(getContext(), "正在压缩", Toast.LENGTH_SHORT).show();
+                    break;
+            }
+        }
+    };
 
     public Preview(Context context) {
         super(context);
@@ -92,7 +108,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback ,Reco
             parameters.setPictureFormat(PixelFormat.JPEG);
             parameters.setPreviewFormat(PixelFormat.YCbCr_420_SP);
             List<Camera.Size> sizes = parameters.getSupportedPreviewSizes();
-            float rate = VIDEO_WIDTH / VIDEO_HEIGHT;
+            float rate = (float) VIDEO_WIDTH / (float) VIDEO_HEIGHT;
 //            for (Camera.Size size : sizes) {
 //                Log.e("size", "size:" + "-width-" + size.width + "-height-" + size.height);
 //                if (size.width>=400&&size.width<=800){
@@ -140,11 +156,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback ,Reco
         mCamera.unlock();
         FileUtils.createSDCardDir("/VideoDemo");
 
-        if (mRecorder == null) {
-            mRecorder = new MediaRecorder();
-        } else {
-            mRecorder.reset();
-        }
+        mRecorder = new MediaRecorder();
         mRecorder.setCamera(mCamera);
 
         mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
@@ -194,7 +206,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback ,Reco
 
 
         mRecorder.setOrientationHint(90);
-        mRecorder.setMaxDuration(6*1000);//设置最大播放时间为6s
+        mRecorder.setMaxDuration(6 * 1000);//设置最大播放时间为6s
         mRecorder.setOnInfoListener(new MediaRecorder.OnInfoListener() {
             @Override
             public void onInfo(MediaRecorder mr, int what, int extra) {
@@ -208,6 +220,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback ,Reco
 
     /**
      * 压缩和裁剪的线程
+     *
      * @param FileName
      */
     private void compressThread(final String FileName) {
@@ -222,6 +235,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback ,Reco
             /**
              */
             private void compressSize() {
+                mHandler.sendEmptyMessage(WHAT_COMPRESS);
                 final long startTime = System.currentTimeMillis();
                 String fileDir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/VideoDemo";
                 file2 = new File(fileDir, "2222" + FileName);
@@ -242,6 +256,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback ,Reco
                                 @Override
                                 public void processComplete(int exitValue) {
                                     long stopTime = System.currentTimeMillis();
+                                    mIsRecording = false;
                                     Log.e("compress", "压缩裁剪:" + exitValue + "用时:" + (stopTime - startTime) / (1000));
                                     try {
                                         if (mStateListener != null)
@@ -266,16 +281,21 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback ,Reco
      */
     @Override
     public void startRecord() {
-        try {
-            initRecorder();
-            mRecorder.prepare();
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (!mIsRecording) {
+            try {
+                initRecorder();
+                mRecorder.prepare();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            mRecorder.start();
+            mIsRecording = true;
+            if (mStateListener != null)
+                mStateListener.onStartRecord();
+            Toast.makeText(getContext(), "开始录制", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(getContext(), "正在录制", Toast.LENGTH_SHORT).show();
         }
-        mRecorder.start();
-        if (mStateListener != null)
-            mStateListener.onStartRecord();
-        Toast.makeText(getContext(), "开始录制", Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -283,10 +303,15 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback ,Reco
      */
     @Override
     public void stopRecord() {
-        mRecorder.stop();
-        mRecorder.release();
-        compressThread(file1.getName());
-        Toast.makeText(getContext(), "结束录制", Toast.LENGTH_SHORT).show();
+        if (mIsRecording) {
+            mRecorder.stop();
+            mRecorder.release();
+            mRecorder=null;
+            compressThread(file1.getName());
+            Toast.makeText(getContext(), "结束录制", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(getContext(), "并不在录制哦", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void setOnRecordStateChangedListener(OnRecordStateChangedListener listener) {
