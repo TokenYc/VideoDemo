@@ -3,4 +3,5 @@
     <string name="record">录制</string>
     <string name="start_record">录制</string>
     <string name="stop_record">结束</string>
+    <string name="play">播放</string>
 </resources>

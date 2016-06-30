@@ -11,6 +11,8 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
+import android.widget.Toast;
+
 import org.ffmpeg.android.*;
 
 import net.archeryc.videodemo.utils.FileUtils;
@@ -21,16 +23,20 @@ import java.util.List;
 
 /**
  * Created by 24706 on 2016/6/28.
+ * 视频预览和录制
  */
-public class Preview extends SurfaceView implements SurfaceHolder.Callback {
+public class Preview extends SurfaceView implements SurfaceHolder.Callback ,RecordManager{
     private static final String TAG = Preview.class.getName();
+    private static final int VIDEO_WIDTH=640;
+    private static final int VIDEO_HEIGHT=480;
     private SurfaceHolder mSurfaceHolder;
     private Camera mCamera;
     private MediaRecorder mRecorder;
-    private File file1;
-    private File file2;
+    private File file1;//录制视频的文件
+    private File file2;//压缩的文件
     private CamcorderProfile profile;
     private int transY;
+    private OnRecordStateChangedListener mStateListener;
 
 
     public Preview(Context context) {
@@ -49,7 +55,6 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private void init() {
-
         mSurfaceHolder = getHolder();
         mSurfaceHolder.addCallback(this);
         mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
@@ -87,12 +92,12 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
             parameters.setPictureFormat(PixelFormat.JPEG);
             parameters.setPreviewFormat(PixelFormat.YCbCr_420_SP);
             List<Camera.Size> sizes = parameters.getSupportedPreviewSizes();
-            float rate = 640f/480f;
+            float rate = VIDEO_WIDTH / VIDEO_HEIGHT;
 //            for (Camera.Size size : sizes) {
 //                Log.e("size", "size:" + "-width-" + size.width + "-height-" + size.height);
 //                if (size.width>=400&&size.width<=800){
 //                    rate=(float)size.width/(float)size.height;
-            parameters.setPreviewSize(640, 480);
+            parameters.setPreviewSize(VIDEO_WIDTH, VIDEO_HEIGHT);
 //                    break;
 //                }
 //            }
@@ -102,10 +107,10 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
             int height = (int) (width);
             Log.e(TAG, "width:" + width + "height:" + height);
             layoutParams.width = width;
-            layoutParams.height = (int)(width*rate);
+            layoutParams.height = (int) (width * rate);
             setLayoutParams(layoutParams);
 
-            transY=(int)(((float)width*rate-(float)width/rate)/2f);
+            transY = (int) (((float) width * rate - (float) width / rate) / 2f);
             setTranslationY(-transY);//视频高度-展示高度的一半，使裁剪的的中间位置，下面裁剪的位置也要注意
             Log.e("trans", "transy:" + transY);
 //            if (this.getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE) {
@@ -127,6 +132,10 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
+    /**
+     * 初始化recorder
+     * 设置参数时要注意顺序，不然会报错
+     */
     private void initRecorder() {
         mCamera.unlock();
         FileUtils.createSDCardDir("/VideoDemo");
@@ -185,11 +194,22 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
 
 
         mRecorder.setOrientationHint(90);
-        mRecorder.setMaxDuration(30000);
-
+        mRecorder.setMaxDuration(6*1000);//设置最大播放时间为6s
+        mRecorder.setOnInfoListener(new MediaRecorder.OnInfoListener() {
+            @Override
+            public void onInfo(MediaRecorder mr, int what, int extra) {
+                if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
+                    stopRecord();
+                }
+            }
+        });
         mRecorder.setPreviewDisplay(mSurfaceHolder.getSurface());
     }
 
+    /**
+     * 压缩和裁剪的线程
+     * @param FileName
+     */
     private void compressThread(final String FileName) {
 
         new Thread() {
@@ -202,10 +222,9 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
             /**
              */
             private void compressSize() {
-
-                file2 = new File(Environment.getExternalStorageDirectory().getAbsolutePath()
-                        + "/VideoDemo", "2222"+FileName);
-//
+                final long startTime = System.currentTimeMillis();
+                String fileDir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/VideoDemo";
+                file2 = new File(fileDir, "2222" + FileName);
                 try {
                     File fileAppRoot = new File(
                             getContext().getApplicationInfo().dataDir);
@@ -213,9 +232,8 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
                             getContext(), fileAppRoot);
 //
                     fc.compress_clipVideo(file1.getCanonicalPath(),
-                            file2.getCanonicalPath(),80, 0,
+                            file2.getCanonicalPath(), 80, 0,
                             new ShellUtils.ShellCallback() {
-                                private int flag = 0;
 
                                 @Override
                                 public void shellOut(String shellLine) {
@@ -223,7 +241,14 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
 
                                 @Override
                                 public void processComplete(int exitValue) {
-                                    Log.e("hahaha", "压缩裁剪:"+exitValue);
+                                    long stopTime = System.currentTimeMillis();
+                                    Log.e("compress", "压缩裁剪:" + exitValue + "用时:" + (stopTime - startTime) / (1000));
+                                    try {
+                                        if (mStateListener != null)
+                                            mStateListener.onFinishRecord(file2.getCanonicalPath());
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             });
 
@@ -236,6 +261,10 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
         }.start();
     }
 
+    /**
+     * 开始录制
+     */
+    @Override
     public void startRecord() {
         try {
             initRecorder();
@@ -244,11 +273,33 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
             e.printStackTrace();
         }
         mRecorder.start();
+        if (mStateListener != null)
+            mStateListener.onStartRecord();
+        Toast.makeText(getContext(), "开始录制", Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * 停止录制
+     */
+    @Override
     public void stopRecord() {
         mRecorder.stop();
         mRecorder.release();
         compressThread(file1.getName());
+        Toast.makeText(getContext(), "结束录制", Toast.LENGTH_SHORT).show();
+    }
+
+    public void setOnRecordStateChangedListener(OnRecordStateChangedListener listener) {
+        this.mStateListener = listener;
+    }
+
+
+    /**
+     * 开始录制和结束录制的回掉
+     */
+    public interface OnRecordStateChangedListener {
+        void onStartRecord();
+
+        void onFinishRecord(String path);
     }
 }

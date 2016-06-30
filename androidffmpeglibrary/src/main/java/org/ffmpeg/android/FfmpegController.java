@@ -261,10 +261,10 @@ public class FfmpegController {
 		cmd.add("zerolatency");
 
 		cmd.add("-s");
-		cmd.add("360x480");
+		cmd.add("150x200");//单帧大小
 
 		cmd.add(Argument.BITRATE_VIDEO);
-		cmd.add(800 + "k");
+		cmd.add(600 + "k");//比特率
 
 		cmd.add("-r");
 		cmd.add("30");
