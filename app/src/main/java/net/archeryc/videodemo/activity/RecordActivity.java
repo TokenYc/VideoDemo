@@ -1,10 +1,11 @@
 
 package net.archeryc.videodemo.activity;
 
-import android.app.Activity;
+import android.Manifest;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -14,7 +15,7 @@ import net.archeryc.videodemo.R;
 import net.archeryc.videodemo.utils.FileUtils;
 import net.archeryc.videodemo.view.Preview;
 import net.archeryc.videodemo.view.QfVideoView;
-import net.archeryc.videodemo.view.RecordManager;
+
 
 /**
  * 这里实现竖屏预览是通过加遮罩实现的，在生成视频后进行相应的裁剪
@@ -119,4 +120,6 @@ public class RecordActivity extends AppCompatActivity implements Preview.OnRecor
                 break;
         }
     }
+
+
 }

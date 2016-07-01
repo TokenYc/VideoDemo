@@ -256,8 +256,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Reco
                                 @Override
                                 public void processComplete(int exitValue) {
                                     long stopTime = System.currentTimeMillis();
-                                    mIsRecording = false;
-                                    Log.e("compress", "压缩裁剪:" + exitValue + "用时:" + (stopTime - startTime) / (1000));
+                                    Log.e("compress", "压缩裁剪:" + exitValue + "用时:" + ((double)stopTime - (double)startTime) / (1000d));
                                     try {
                                         if (mStateListener != null)
                                             mStateListener.onFinishRecord(file2.getCanonicalPath());
@@ -307,6 +306,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Reco
             mRecorder.stop();
             mRecorder.release();
             mRecorder=null;
+            mIsRecording = false;
             compressThread(file1.getName());
             Toast.makeText(getContext(), "结束录制", Toast.LENGTH_SHORT).show();
         } else {

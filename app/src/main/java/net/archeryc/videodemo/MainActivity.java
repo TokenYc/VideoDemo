@@ -17,6 +17,7 @@ import android.widget.Toast;
 
 import net.archeryc.videodemo.activity.RecordActivity;
 
+
 public class MainActivity extends Activity {
     private static final int PERMISSION_SDCARD = 122;
     private static final int PERMISSION_RECORD = 123;
