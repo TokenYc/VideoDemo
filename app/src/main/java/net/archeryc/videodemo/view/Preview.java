@@ -153,6 +153,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Reco
      * 设置参数时要注意顺序，不然会报错
      */
     private void initRecorder() {
+        mCamera.stopPreview();
         mCamera.unlock();
         FileUtils.createSDCardDir("/VideoDemo");
 
@@ -165,12 +166,6 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Reco
 //        mRecorder.setOrientationHint(90);
 //        mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
 //        mRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-        file1 = new File(Environment.getExternalStorageDirectory().getAbsolutePath()
-                + "/VideoDemo" + "/" + System.currentTimeMillis() + ".mp4");
-
-        mRecorder.setOutputFile(file1.getAbsolutePath());
-
-//        mRecorder.setAudioChannels(2);
 
         if (CamcorderProfile.hasProfile(CamcorderProfile.QUALITY_480P))
 
@@ -193,19 +188,25 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Reco
         {
             profile = CamcorderProfile.get(CamcorderProfile.QUALITY_LOW);
         }
-
         if (profile != null)
 
         {
             profile.audioCodec = MediaRecorder.AudioEncoder.AAC;
             profile.audioSampleRate = 16000;
 
-            profile.videoCodec = MediaRecorder.VideoEncoder.H264;
-            mRecorder.setProfile(profile);
+//            profile.videoCodec = MediaRecorder.VideoEncoder.H264;
+//            mRecorder.setProfile(profile);
         }
+        mRecorder.setProfile(profile);
+        file1 = new File(Environment.getExternalStorageDirectory().getAbsolutePath()
+                + "/VideoDemo" + "/" + System.currentTimeMillis() + ".mp4");
+        mRecorder.setOutputFile(file1.getAbsolutePath());
 
+//        mRecorder.setAudioChannels(2);
 
         mRecorder.setOrientationHint(90);
+        mRecorder.setPreviewDisplay(mSurfaceHolder.getSurface());
+
         mRecorder.setMaxDuration(6 * 1000);//设置最大播放时间为6s
         mRecorder.setOnInfoListener(new MediaRecorder.OnInfoListener() {
             @Override
@@ -215,7 +216,8 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Reco
                 }
             }
         });
-        mRecorder.setPreviewDisplay(mSurfaceHolder.getSurface());
+
+
     }
 
     Handler handler=new Handler(){
