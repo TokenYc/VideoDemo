@@ -17,9 +17,14 @@ import java.util.StringTokenizer;
 import org.ffmpeg.android.ShellUtils.ShellCallback;
 
 import android.content.Context;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
+import android.widget.Toast;
 
 public class FfmpegController {
 
@@ -30,6 +35,7 @@ public class FfmpegController {
 	private File mFileTemp;
 
 	private String mCmdCat = "sh cat";
+
 
 	public FfmpegController(Context context, File fileTemp)
 			throws FileNotFoundException, IOException {
@@ -47,7 +53,7 @@ public class FfmpegController {
 	}
 
 	private static String installBinary(Context ctx, int resId,
-			String filename, boolean upgrade) {
+										String filename, boolean upgrade) {
 		try {
 			File f = new File(ctx.getDir("bin", 0), filename);
 			if (f.exists()) {
@@ -63,7 +69,7 @@ public class FfmpegController {
 
 	/**
 	 * Copies a raw resource file, given its ID to the given location
-	 * 
+	 *
 	 * @param ctx
 	 *            context
 	 * @param resid
@@ -78,7 +84,7 @@ public class FfmpegController {
 	 *             when interrupted
 	 */
 	private static void copyRawFile(Context ctx, int resid, File file,
-			String mode) throws IOException, InterruptedException {
+									String mode) throws IOException, InterruptedException {
 		final String abspath = file.getAbsolutePath();
 		// Write the iptables binary
 		final FileOutputStream out = new FileOutputStream(file);
@@ -93,7 +99,6 @@ public class FfmpegController {
 		// Change the permissions
 		Runtime.getRuntime().exec("chmod " + mode + " " + abspath).waitFor();
 	}
-
 	private void execFFMPEG(List<String> cmd, ShellCallback sc, File fileExec)
 			throws IOException, InterruptedException {
 
@@ -216,43 +221,38 @@ public class FfmpegController {
 
 	}
 
+	Handler mHandler;
 	/**
 	 * 压缩视频 ---生成新视频
-	 * 
-	 * @param f1_path
-	 *            源文件路径
-	 * @param f2_path
-	 *            压缩后文件路径
-	 * @param sc
-	 *            回调方法
-	 * @param top_x top_y  
-	 * 				裁剪的起始点
-	 * @throws Exception
-	 * 
-	 *             eg: -threads 4 -y -i /storage/sdcard1/output.mp4 -strict -2
-	 *             -vf crop=480:480:186:0 -preset ultrafast -tune zerolatency -s
-	 *             480x480 -r 25 -vcodec libx264 -acodec copy
-	 *             /storage/sdcard1/end.mp4
+	 *
+	 * @param f1_path 源文件路径
+	 * @param f2_path 压缩后文件路径
+	 * @param sc      回调方法
+	 * @param top_x   top_y
+	 *                裁剪的起始点
+	 * @throws Exception eg: -threads 4 -y -i /storage/sdcard1/output.mp4 -strict -2
+	 *                   -vf crop=480:480:186:0 -preset ultrafast -tune zerolatency -s
+	 *                   480x480 -r 25 -vcodec libx264 -acodec copy
+	 *                   /storage/sdcard1/end.mp4
 	 */
-	public void compress_clipVideo(String f1_path, String f2_path, int top_x , int top_y ,ShellCallback sc)
+	public void compress_clipVideo(Handler handler, String f1_path, String f2_path, int top_x, int top_y, ShellCallback sc)
 			throws Exception {
+		this.mHandler=handler;
 		ArrayList<String> cmd = new ArrayList<String>();
-
 		cmd.add(mFfmpegBin);
 		cmd.add("-threads");
 		cmd.add("4");
 		cmd.add("-y");
 		cmd.add("-i");
 		cmd.add(f1_path);
-		
 		//-strict -2
 		cmd.add("-strict");
 		cmd.add("-2");
-		
+
 		//-vf crop=480:480:186:0 裁剪尺寸
 		cmd.add("-vf");
-		cmd.add("crop=360:480:"+top_x+":"+top_y);
-		
+		cmd.add("crop=200:150:" + 0 + ":" + 0);
+
 		// -preset ultrafast -tune zerolatency 加快效率
 		cmd.add("-preset");
 		cmd.add("ultrafast");
@@ -260,8 +260,8 @@ public class FfmpegController {
 		cmd.add("-tune");
 		cmd.add("zerolatency");
 
-		cmd.add("-s");
-		cmd.add("150x200");//单帧大小
+//		cmd.add("-s");
+//		cmd.add("150x200");//单帧大小
 
 		cmd.add(Argument.BITRATE_VIDEO);
 		cmd.add(600 + "k");//比特率
@@ -276,11 +276,12 @@ public class FfmpegController {
 		cmd.add("copy");
 		cmd.add(f2_path);
 
+		Log.d("cmd", "cmd:" + cmd);
 		execFFMPEG(cmd, sc);
 	}
 
 	public void processVideo(Clip in, Clip out, boolean enableExperimental,
-			ShellCallback sc) throws Exception {
+							 ShellCallback sc) throws Exception {
 
 		ArrayList<String> cmd = new ArrayList<String>();
 
@@ -379,7 +380,7 @@ public class FfmpegController {
 	}
 
 	public Clip createSlideshowFromImagesAndAudio(ArrayList<Clip> images,
-			Clip audio, Clip out, int durationPerSlide, ShellCallback sc)
+												  Clip audio, Clip out, int durationPerSlide, ShellCallback sc)
 			throws Exception {
 
 		final String imageBasePath = new File(mFileTemp, "image-")
@@ -509,34 +510,34 @@ public class FfmpegController {
 	}
 
 	/*
-	 * ffmpeg -y -loop 0 -f image2 -r 0.5 -i image-%03d.jpg -s:v 1280x720 -b:v
-	 * 1M \ -i soundtrack.mp3 -t 01:05:00 -map 0:0 -map 1:0 out.avi
-	 * 
-	 * -loop_input 鈥�loops the images. Disable this if you want to stop the
-	 * encoding when all images are used or the soundtrack is finished.
-	 * 
-	 * -r 0.5 鈥�sets the framerate to 0.5, which means that each image will be
-	 * shown for 2 seconds. Just take the inverse, for example if you want each
-	 * image to last for 3 seconds, set it to 0.33.
-	 * 
-	 * -i image-%03d.jpg 鈥�use these input files. %03d means that there will be
-	 * three digit numbers for the images.
-	 * 
-	 * -s 1280x720 鈥�sets the output frame size.
-	 * 
-	 * -b 1M 鈥�sets the bitrate. You want 500MB for one hour, which equals to
-	 * 4000MBit in 3600 seconds, thus a bitrate of approximately 1MBit/s should
-	 * be sufficient.
-	 * 
-	 * -i soundtrack.mp3 鈥�use this soundtrack file. Can be any format.
-	 * 
-	 * -t 01:05:00 鈥�set the output length in hh:mm:ss format.
-	 * 
-	 * out.avi 鈥�create this output file. Change it as you like, for example
-	 * using another container like MP4.
-	 */
+     * ffmpeg -y -loop 0 -f image2 -r 0.5 -i image-%03d.jpg -s:v 1280x720 -b:v
+     * 1M \ -i soundtrack.mp3 -t 01:05:00 -map 0:0 -map 1:0 out.avi
+     *
+     * -loop_input 鈥�loops the images. Disable this if you want to stop the
+     * encoding when all images are used or the soundtrack is finished.
+     *
+     * -r 0.5 鈥�sets the framerate to 0.5, which means that each image will be
+     * shown for 2 seconds. Just take the inverse, for example if you want each
+     * image to last for 3 seconds, set it to 0.33.
+     *
+     * -i image-%03d.jpg 鈥�use these input files. %03d means that there will be
+     * three digit numbers for the images.
+     *
+     * -s 1280x720 鈥�sets the output frame size.
+     *
+     * -b 1M 鈥�sets the bitrate. You want 500MB for one hour, which equals to
+     * 4000MBit in 3600 seconds, thus a bitrate of approximately 1MBit/s should
+     * be sufficient.
+     *
+     * -i soundtrack.mp3 鈥�use this soundtrack file. Can be any format.
+     *
+     * -t 01:05:00 鈥�set the output length in hh:mm:ss format.
+     *
+     * out.avi 鈥�create this output file. Change it as you like, for example
+     * using another container like MP4.
+     */
 	public Clip combineAudioAndVideo(Clip videoIn, Clip audioIn, Clip out,
-			ShellCallback sc) throws Exception {
+									 ShellCallback sc) throws Exception {
 		ArrayList<String> cmd = new ArrayList<String>();
 
 		cmd.add(mFfmpegBin);
@@ -606,7 +607,7 @@ public class FfmpegController {
 	}
 
 	public Clip convertImageToMP4(Clip mediaIn, int duration, String outPath,
-			ShellCallback sc) throws Exception {
+								  ShellCallback sc) throws Exception {
 		Clip result = new Clip();
 		ArrayList<String> cmd = new ArrayList<String>();
 
@@ -669,7 +670,7 @@ public class FfmpegController {
 	// intermediate2.ts
 
 	public Clip convertToMP4Stream(Clip mediaIn, String startTime,
-			double duration, String outPath, ShellCallback sc) throws Exception {
+								   double duration, String outPath, ShellCallback sc) throws Exception {
 		ArrayList<String> cmd = new ArrayList<String>();
 
 		Clip mediaOut = new Clip();
@@ -738,7 +739,7 @@ public class FfmpegController {
 	}
 
 	public Clip convertToWaveAudio(Clip mediaIn, String outPath,
-			int sampleRate, int channels, ShellCallback sc) throws Exception {
+								   int sampleRate, int channels, ShellCallback sc) throws Exception {
 		ArrayList<String> cmd = new ArrayList<String>();
 
 		cmd.add(mFfmpegBin);
@@ -895,7 +896,7 @@ public class FfmpegController {
 	}
 
 	public void concatAndTrimFilesMPEG(ArrayList<Clip> videos, Clip out,
-			boolean preConvert, ShellCallback sc) throws Exception {
+									   boolean preConvert, ShellCallback sc) throws Exception {
 
 		int idx = 0;
 
@@ -924,8 +925,8 @@ public class FfmpegController {
 				}
 
 				/*
-				 * cmd.add ("-acodec"); cmd.add("pcm_s16le");
-				 * 
+                 * cmd.add ("-acodec"); cmd.add("pcm_s16le");
+				 *
 				 * cmd.add ("-vcodec"); cmd.add("mpeg2video");
 				 */
 
@@ -959,7 +960,7 @@ public class FfmpegController {
 			if (preConvert)
 				cmdRun.append(out.path).append('.').append(idx++)
 						.append(".mpg").append(' '); // leave a space at the
-														// end!
+				// end!
 			else
 				cmdRun.append(vdesc.path).append(' ');
 		}
@@ -969,7 +970,7 @@ public class FfmpegController {
 		cmdRun.append("> ");
 		cmdRun.append(mCatPath);
 
-		String[] cmds = { "sh", "-c", cmdRun.toString() };
+		String[] cmds = {"sh", "-c", cmdRun.toString()};
 		Runtime.getRuntime().exec(cmds).waitFor();
 
 		Clip mInCat = new Clip();
@@ -981,7 +982,7 @@ public class FfmpegController {
 	}
 
 	public void extractAudio(Clip mdesc, String audioFormat, File audioOutPath,
-			ShellCallback sc) throws IOException, InterruptedException {
+							 ShellCallback sc) throws IOException, InterruptedException {
 
 		// no just extract the audio
 		ArrayList<String> cmd = new ArrayList<String>();
@@ -1052,7 +1053,7 @@ public class FfmpegController {
 
 			// Log.d(TAG, "Found PID=" + procId + " - killing now...");
 
-			String[] cmd = { ShellUtils.SHELL_CMD_KILL + ' ' + procId + "" };
+			String[] cmd = {ShellUtils.SHELL_CMD_KILL + ' ' + procId + ""};
 
 			try {
 				result = ShellUtils.doShellCommand(cmd, new ShellCallback() {
@@ -1077,7 +1078,7 @@ public class FfmpegController {
 	}
 
 	public Clip trim(Clip mediaIn, boolean withSound, String outPath,
-			ShellCallback sc) throws Exception {
+					 ShellCallback sc) throws Exception {
 		ArrayList<String> cmd = new ArrayList<String>();
 
 		Clip mediaOut = new Clip();
@@ -1119,7 +1120,7 @@ public class FfmpegController {
 	}
 
 	public void concatAndTrimFilesMP4Stream(ArrayList<Clip> videos, Clip out,
-			boolean preconvertClipsToMP4, boolean useCatCmd, ShellCallback sc)
+											boolean preconvertClipsToMP4, boolean useCatCmd, ShellCallback sc)
 			throws Exception {
 
 		File fileExportOut = new File(out.path);
@@ -1337,8 +1338,14 @@ public class FfmpegController {
 				while ((line = br.readLine()) != null)
 					if (sc != null)
 						sc.shellOut(line);
+				if (mHandler!=null){
+					Message msg=new Message();
+					Bundle bundle = new Bundle();
+					bundle.putString("error",line);
+					msg.setData(bundle);
+					mHandler.sendMessage(msg);
+				}
 				Log.i("123", type + "::" + line);
-
 			} catch (IOException ioe) {
 				// Log.e(TAG,"error reading shell slog",ioe);
 				ioe.printStackTrace();

@@ -218,6 +218,13 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Reco
         mRecorder.setPreviewDisplay(mSurfaceHolder.getSurface());
     }
 
+    Handler handler=new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            Toast.makeText(getContext(), (String) msg.getData().get("error"), Toast.LENGTH_SHORT).show();
+        }
+    };
     /**
      * 压缩和裁剪的线程
      *
@@ -245,7 +252,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Reco
                     FfmpegController fc = new FfmpegController(
                             getContext(), fileAppRoot);
 //
-                    fc.compress_clipVideo(file1.getCanonicalPath(),
+                    fc.compress_clipVideo(handler,file1.getCanonicalPath(),
                             file2.getCanonicalPath(), 80, 0,
                             new ShellUtils.ShellCallback() {
 

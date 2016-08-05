@@ -46,9 +46,8 @@ public class ShellUtils {
 
 				@Override
 				public void shellOut(String msg) {
-					
+					Log.d("shellout", "shellout:" + msg);
 					//System.out.print(msg);
-					
 				}
 
 				@Override
