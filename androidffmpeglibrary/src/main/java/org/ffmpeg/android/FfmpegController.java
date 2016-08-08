@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -147,14 +148,12 @@ public class FfmpegController {
 		// any error message?
 		StreamGobbler errorGobbler = new StreamGobbler(
 				process.getErrorStream(), "ERROR", sc);
-
 		// any output?
 		StreamGobbler outputGobbler = new StreamGobbler(
 				process.getInputStream(), "OUTPUT", sc);
 
 		errorGobbler.start();
 		outputGobbler.start();
-
 		int exitVal = process.waitFor();
 
 		sc.processComplete(exitVal);
@@ -268,6 +267,8 @@ public class FfmpegController {
 
 		cmd.add("-r");
 		cmd.add("30");
+		cmd.add("-v");
+		cmd.add("48");
 
 		cmd.add("-vcodec");
 		cmd.add("libx264");

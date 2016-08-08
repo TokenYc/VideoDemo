@@ -194,7 +194,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Reco
             profile.audioCodec = MediaRecorder.AudioEncoder.AAC;
             profile.audioSampleRate = 16000;
 
-//            profile.videoCodec = MediaRecorder.VideoEncoder.H264;
+            profile.videoCodec = MediaRecorder.VideoEncoder.MPEG_4_SP;
 //            mRecorder.setProfile(profile);
         }
         mRecorder.setProfile(profile);
@@ -206,7 +206,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Reco
 
         mRecorder.setOrientationHint(90);
         mRecorder.setPreviewDisplay(mSurfaceHolder.getSurface());
-
+//        Toast.makeText(getContext(), "encoder:"+profile.videoCodec, Toast.LENGTH_SHORT).show();
         mRecorder.setMaxDuration(6 * 1000);//设置最大播放时间为6s
         mRecorder.setOnInfoListener(new MediaRecorder.OnInfoListener() {
             @Override
@@ -260,6 +260,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Reco
 
                                 @Override
                                 public void shellOut(String shellLine) {
+                                    Log.d("shellout", "shellout:" + shellLine);
                                 }
 
                                 @Override
